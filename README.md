@@ -214,5 +214,5 @@ I also created two Tableau Dasboards:
 
 ![Retention](https://github.com/user-attachments/assets/a86df506-4f93-4a1a-9fe0-fc15db90430f)
 
-
+By analyzing key metrics, we will evaluate marketing performance and uncover optimization opportunities. This analysis will provide insights into business health by tracking expected monthly recurring revenue and identifying trends in user behavior across different segments. Ultimately, this data-driven approach will empower informed decisions, enhance marketing strategies, and increase user engagement and revenue.
 
