@@ -10,8 +10,8 @@
    - [Extracting data](#extracting-data)
    - [Calculating MRR](#calculating-mrr)
    - [Using cohorted data](#using-cohorted-data)
-   - 
-- [Final Operational Metrics](#final-operational-metrics)
+   - [Number of Signups](#number-of-signups)
+   - [Putting it all together](#putting-everything-together)
 - [Conclusions](#conclusions)
 
 ### Project Overview
@@ -153,3 +153,22 @@ ubscriptions_cohorted as (
 GROUP BY 1,2
 ),
 ```
+
+#### Number of Signups
+
+Last calculation that I will need for the final report is the number of signups per day, that is generated based on the USERS table, by aggregating the table on signup_date and SIGNUP_CAMPAIGN and counting user_ids.
+
+```sql
+users_agg as (
+    SELECT
+      signup_date,
+      SIGNUP_CAMPAIGN,
+      COUNT(user_id) as signups
+    FROM users
+    GROUP BY 1,2
+),
+```
+
+#### Putting everything together
+
+
