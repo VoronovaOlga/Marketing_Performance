@@ -3,7 +3,7 @@
 ## Table of content:
 
 - [Project Overview](#project-overview)
-- [Goal](#goal)
+- [Goals](#goals)
 - [Data Sources](#data-sources)
 - [Tools](#tools)
 - [Process Steps](#process-steps)
@@ -19,7 +19,7 @@
 
 This data analysis project aims to provide insights into the performance of the marketing campaigns for an AI-based application that offers life coaching sessions via text. Users can access the service by purchasing a subscription, choosing between two options: yearly or monthly.
 
-### Goal
+### Goals
 
 The Head of Marketing has requested a comprehensive report including the following:
 
