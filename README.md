@@ -171,4 +171,39 @@ users_agg as (
 
 #### Putting everything together
 
+I have all the necessary components to create the final view, cost_conversions, which will link the campaign data with all user conversions (signups, subscriptions, and MRR). I will create this view by joining cost_data with users_agg and subscriptions_cohorted on the date and campaign name.
+
+```sql
+cost_conversions as (
+  SELECT
+    C.DATE,
+    C.CAMPAIGN,
+    C.COST,
+    C.CLICKS,
+    C.IMPRESSIONS,
+    U.signups,
+    S.yearly_subscriptions_mrr,
+    S.monthly_subscriptions_mrr,
+    S.total_mrr::int as total_mrr,
+    S.monthly_subscriptions,
+    S.yearly_subscriptions,
+    S.total_subscriptions
+  FROM cost_data C 
+  LEFT JOIN USERS_AGG U 
+    ON C.Date = U.signup_date AND C.campaign = U.SIGNUP_CAMPAIGN
+  LEFT JOIN subscriptions_cohorted S 
+    ON C.Date = S.signup_date AND C.campaign = S.SIGNUP_CAMPAIGN
+)
+```
+
+### Conclusions
+
+Examples of the reportt is included in this project repository as CSV file as well as full SQL.
+
+#### Tableau
+
+I also created two Tableau Dasboards:
+
+- CAMPAIGN PERFORMANCE  [Click here](https://public.tableau.com/app/profile/olga.voronova3157/viz/MarketingPerformanceDashboard_17257476198380/MarketingDashboard_Performance)
+  
 
