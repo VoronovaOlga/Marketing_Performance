@@ -7,7 +7,8 @@
 - [Data Sources](#data-sources)
 - [Tools](#tools)
 - [Process Steps](#process-steps)
-   - [ Extracting data](#extracting-data)
+   - [Extracting data](#extracting-data)
+   - [Calculating MRR](#calculating-mrr)
 - [Final Operational Metrics](#final-operational-metrics)
 - [Conclusions](#conclusions)
 
@@ -46,42 +47,89 @@ The database schema is located in SQLIII database, RAW_DATA schema, and includes
 
 ####  Extracting data
 
-I’ll be working in Snowflake and will start by creating CTEs to extract data from each table. Since the Subscriptions table doesn’t have the users’ signup_campaign and signup_date information, which I will need later, I plan to add this data using the Users table and join it on user_id.
+I’ll be working in Snowflake and will start by creating CTEs to extract data from each table. Since theSUBSCRIPTIONS table doesn’t have the users’ signup_campaign and signup_date information, which I will need later, I plan to add this data using the USERS table and join it on user_id.
 
 ```sql
-WITH 
+WITH
 
-users AS (
-  SELECT *
-  FROM SQLIII.RAW_DATA.USERS
+cost_data as (
+    SELECT *
+    FROM SQLIII.RAW_DATA.campaigns
 ),
 
-subscriptions AS(
-  SELECT *
-  FROM SQLIII.RAW_DATA.SUBSCRIPTIONS
+users as (
+    SELECT *
+    FROM SQLIII.RAW_DATA.users
 ),
 
 months AS(
   SELECT *
   FROM SQLIII.RAW_DATA.MONTHS
 ),
-
-campaigns AS(
-  SELECT *
-  FROM SQLIII.RAW_DATA.CAMPAIGNS
-),
-
-joined AS(
-  SELECT s.user_id,
-         u.signup_campaign,
-         u.signup_date,
-         s.subscription_id,
-         s.subscription_type,
-         s.subscription_start_date,
-         s.subscription_end_date,
-         s.plan_price
-  FROM subscriptions s
-  JOIN users u
-  ON s.user_id = u.user_id
+    
+subscriptions as (
+    SELECT
+     S.USER_ID,
+     U.SIGNUP_CAMPAIGN,
+     U.signup_date,
+     S.SUBSCRIPTION_ID,
+     S.SUBSCRIPTION_TYPE,
+     S.SUBSCRIPTION_START_DATE,
+     S.SUBSCRIPTION_END_DATE,
+     S.PLAN_PRICE
+    FROM SQLIII.RAW_DATA.subscriptions S
+    JOIN users U 
+    ON s.user_id = u.user_id
 ),
 ```
+
+#### Calculating MRR
+
+MRR or Monthly Recurring Revenue is a key financial metric commonly used by subscription-based businesses to measure the predictable and recurring revenue generated each month. MRR provides insight into the health and growth of the business by tracking how much revenue is expected to recur on a monthly basis. 
+
+To calculate MRR, I summed the monthly subscription fees paid by all customers. For annual subscriptions, I divided the fee by 12 and included 1/12 of the fee in each month's MRR.
+
+Before I calculate MRR, I joined MONTHS table with the SUBSCRIPTIONS table in a way, that we create rows only for the months when the subscription was active. I added a column for whether the subscription was **active** using the columns `subscription_start_date` and `subscription_end_date`. I added this column to the `subscriptions_dates` CTE. The logic is the following:
+
+The subscription Is_Active if:
+- The `SUBSCRIPTION_START_DATE` is after the last day of `DATE_MONTH` and ends/was cancelled before the end of `DATE_MONTH` 
+- Or the `SUBSCRIPTION_END_DATE` is NULL
+
+The subsctiption is "Inactive" if:
+- If the subscription ends on the month of DATE_MONTH
+
+After that I calculate the revenue, considering both monthly and yearly subscriptions.
+
+```sql
+subscriptions_dates as (
+    SELECT
+     M.DATE_MONTH,
+     S.USER_ID,
+     S.SIGNUP_CAMPAIGN,
+     S.signup_date,
+     S.SUBSCRIPTION_ID,
+     S.SUBSCRIPTION_TYPE,
+     S.SUBSCRIPTION_START_DATE,
+     S.SUBSCRIPTION_END_DATE,
+     S.PLAN_PRICE,
+     CASE WHEN (SUBSCRIPTION_START_DATE <= LAST_DAY(date_month)) 
+           AND (SUBSCRIPTION_END_DATE >= LAST_DAY(date_month) OR SUBSCRIPTION_END_DATE IS NULL) 
+        THEN 1
+		    ELSE NULL 
+     END as is_active
+    FROM subscriptions S 
+    JOIN months M 
+     ON (SUBSCRIPTION_START_DATE <= LAST_DAY(date_month)
+    AND (S.SUBSCRIPTION_END_DATE >= LAST_DAY(date_month) or S.SUBSCRIPTION_END_DATE is null))
+    ),
+
+subscription_payments as (
+select *,
+     CASE WHEN is_active = 1 and SUBSCRIPTION_TYPE = 'Monthly' then PLAN_PRICE
+          WHEN is_active = 1 and SUBSCRIPTION_TYPE = 'Yearly'  then PLAN_PRICE/12
+          ELSE NULL
+     END as monthly_plan_price
+from  subscriptions_dates
+),
+```
+
