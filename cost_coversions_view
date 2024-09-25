@@ -1,0 +1,107 @@
+WITH
+
+cost_data as (
+    SELECT *
+    FROM SQLIII.RAW_DATA.campaigns
+),
+
+users as (
+    SELECT *
+    FROM SQLIII.RAW_DATA.users
+),
+
+months AS(
+  SELECT *
+  FROM SQLIII.RAW_DATA.MONTHS
+),
+    
+subscriptions as (
+    SELECT
+     S.USER_ID,
+     U.SIGNUP_CAMPAIGN,
+     U.signup_date,
+     S.SUBSCRIPTION_ID,
+     S.SUBSCRIPTION_TYPE,
+     S.SUBSCRIPTION_START_DATE,
+     S.SUBSCRIPTION_END_DATE,
+     S.PLAN_PRICE
+    FROM SQLIII.RAW_DATA.subscriptions S
+    JOIN users U 
+    ON s.user_id = u.user_id
+),
+subscriptions_dates as (
+    SELECT
+     M.DATE_MONTH,
+     S.USER_ID,
+     S.SIGNUP_CAMPAIGN,
+     S.signup_date,
+     S.SUBSCRIPTION_ID,
+     S.SUBSCRIPTION_TYPE,
+     S.SUBSCRIPTION_START_DATE,
+     S.SUBSCRIPTION_END_DATE,
+     S.PLAN_PRICE,
+     CASE WHEN (SUBSCRIPTION_START_DATE <= LAST_DAY(date_month)) 
+           AND (SUBSCRIPTION_END_DATE >= LAST_DAY(date_month) OR SUBSCRIPTION_END_DATE IS NULL) 
+        THEN 1
+		    ELSE NULL 
+     END as is_active
+    FROM subscriptions S 
+    JOIN months M 
+     ON (SUBSCRIPTION_START_DATE <= LAST_DAY(date_month)
+    AND (S.SUBSCRIPTION_END_DATE >= LAST_DAY(date_month) or S.SUBSCRIPTION_END_DATE is null))
+    ),
+
+subscription_payments as (
+select *,
+     CASE WHEN is_active = 1 and SUBSCRIPTION_TYPE = 'Monthly' then PLAN_PRICE
+          WHEN is_active = 1 and SUBSCRIPTION_TYPE = 'Yearly'  then PLAN_PRICE/12
+          ELSE NULL
+     END as monthly_plan_price
+from  subscriptions_dates
+),
+
+subscriptions_cohorted as (
+  SELECT S.signup_date,
+	s.SIGNUP_CAMPAIGN,
+	SUM(monthly_plan_price) as total_mrr,
+	SUM(IFF(S.SUBSCRIPTION_TYPE = 'Yearly', monthly_plan_price, 0) ) as yearly_subscriptions_mrr,
+	SUM(IFF(S.SUBSCRIPTION_TYPE = 'Monthly', monthly_plan_price, 0) ) as monthly_subscriptions_mrr,
+	COUNT(DISTINCT subscription_id) as total_subscriptions,
+	COUNT(DISTINCT IFF(S.SUBSCRIPTION_TYPE = 'Yearly', subscription_id, NULL) ) as yearly_subscriptions,
+	COUNT(DISTINCT IFF(S.SUBSCRIPTION_TYPE = 'Monthly', subscription_id, NULL) ) as monthly_subscriptions
+  FROM subscription_payments S 
+GROUP BY 1,2
+),
+
+users_agg as (
+    SELECT
+      signup_date,
+      SIGNUP_CAMPAIGN,
+      COUNT(user_id) as signups
+    FROM users
+    GROUP BY 1,2
+),
+
+cost_conversions as (
+  SELECT
+    C.DATE,
+    C.CAMPAIGN,
+    C.COST,
+    C.CLICKS,
+    C.IMPRESSIONS,
+    U.signups,
+    S.yearly_subscriptions_mrr,
+    S.monthly_subscriptions_mrr,
+    S.total_mrr::int as total_mrr,
+    S.monthly_subscriptions,
+    S.yearly_subscriptions,
+    S.total_subscriptions
+  FROM cost_data C 
+  LEFT JOIN USERS_AGG U 
+    ON C.Date = U.signup_date AND C.campaign = U.SIGNUP_CAMPAIGN
+  LEFT JOIN subscriptions_cohorted S 
+    ON C.Date = S.signup_date AND C.campaign = S.SIGNUP_CAMPAIGN
+)
+select *
+from cost_conversions
+order by 1,2;
