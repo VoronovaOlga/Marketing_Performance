@@ -1,3 +1,18 @@
+create or replace view WORKSPACE_OVORONOVA.PUBLIC.COST_CONVERSIONS_VIEW_(
+	DATE,
+	CAMPAIGN,
+	COST,
+	CLICKS,
+	IMPRESSIONS,
+	SIGNUPS,
+	MONTHLY_SUBSCRIPTIONS_MRR,
+	YEARLY_SUBSCRIPTIONS_MRR,
+	TOTAL_MRR,
+	MONTHLY_SUBSCRIPTIONS,
+	YEARLY_SUBSCRIPTIONS,
+	TOTAL_SUBSCRIPTIONS
+) as
+
 WITH
 
 cost_data as (
@@ -29,6 +44,7 @@ subscriptions as (
     JOIN users U 
     ON s.user_id = u.user_id
 ),
+
 subscriptions_dates as (
     SELECT
      M.DATE_MONTH,
@@ -102,6 +118,7 @@ cost_conversions as (
   LEFT JOIN subscriptions_cohorted S 
     ON C.Date = S.signup_date AND C.campaign = S.SIGNUP_CAMPAIGN
 )
+
 select *
 from cost_conversions
 order by 1,2;
