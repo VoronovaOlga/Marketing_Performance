@@ -13,6 +13,7 @@
    - [Number of Signups](#number-of-signups)
    - [Putting it all together](#putting-everything-together)
 - [Conclusions](#conclusions)
+  - [Tableau](#tableau)
 
 ### Project Overview
 
@@ -205,5 +206,13 @@ Examples of the reportt is included in this project repository as CSV file as we
 I also created two Tableau Dasboards:
 
 - CAMPAIGN PERFORMANCE  [Click here](https://public.tableau.com/app/profile/olga.voronova3157/viz/MarketingPerformanceDashboard_17257476198380/MarketingDashboard_Performance)
+
+![Campaign Performance](https://github.com/user-attachments/assets/d5dd2187-49aa-4994-a018-e31e1ae96b1f)
+
   
+- RETENTION [Click here](https://public.tableau.com/app/profile/olga.voronova3157/viz/MarketingDashboardRetention/MarketingDashboard_Retention)
+
+![Retention](https://github.com/user-attachments/assets/a86df506-4f93-4a1a-9fe0-fc15db90430f)
+
+
 
